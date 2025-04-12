@@ -4,6 +4,6 @@ namespace BankSystem.Repository.RepositoryInterfaces
 {
     public interface ISubscriptionRepository : IRepository<Subscription>
     {
-        Task<IEnumerable<Subscription>> GetActiveSubscriptionsByAccountIdAsync(int accountId);
+        Task<Subscription> GetActiveSubscriptionByAccountIdAsync(int accountId);
     }
 }

@@ -7,8 +7,11 @@ namespace BankSystem.Repository.Repositories
 {
     public class UserRepository : GenericRepository<User>, IUserRepository
     {
+        private readonly BankingContext _context;
+
         public UserRepository(BankingContext context) : base(context)
         {
+            _context = context;
         }
 
         public async Task<User> GetByEmailAsync(string email)

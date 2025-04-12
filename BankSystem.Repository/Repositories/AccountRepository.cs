@@ -7,8 +7,11 @@ namespace BankSystem.Repository.Repositories
 {
     public class AccountRepository : GenericRepository<Account>, IAccountRepository
     {
+        private readonly BankingContext _context;
+
         public AccountRepository(BankingContext context) : base(context)
         {
+            _context = context;
         }
 
         public async Task<Account> GetAccountByUserIdAsync(int userId)

@@ -5,8 +5,8 @@ namespace BankSystem.Service.Helper
 {
     public class EmailService
     {
-        private readonly string _fromEmail = "stcbank96@gmail.com";  // Store securely (e.g., in environment variables)
-        private readonly string _password = "skamzazvrlulwham";     // Store securely (e.g., in environment variables)
+        private readonly string _fromEmail = "stcbank96@gmail.com";
+        private readonly string _password = "skamzazvrlulwham";
         private readonly string _smtpServer = "smtp.gmail.com";
         private readonly int _smtpPort = 587;
 
@@ -18,6 +18,7 @@ namespace BankSystem.Service.Helper
             if (transactionId.HasValue)
             {
                 body += $"\nTransaction ID: {transactionId.Value}";
+                subject = $"Transaction OTP - ID: {transactionId.Value}";
             }
 
             try
@@ -30,7 +31,8 @@ namespace BankSystem.Service.Helper
                     using (var mailMessage = new MailMessage(_fromEmail, toEmail)
                     {
                         Subject = subject,
-                        Body = body
+                        Body = body,
+                        IsBodyHtml = false
                     })
                     {
                         await smtpClient.SendMailAsync(mailMessage);
@@ -41,9 +43,31 @@ namespace BankSystem.Service.Helper
             }
             catch (Exception ex)
             {
-                // Log the exception (you may want to log this to a file or monitoring system in a real application)
                 Console.WriteLine($"[EmailService] Error: {ex.Message}");
+
+                throw new ApplicationException("Error sending email", ex);
             }
         }
+
+        public async Task SendEmailAsync(string toEmail, string subject, string body)
+        {
+            using (var client = new SmtpClient(_smtpServer, _smtpPort))
+            {
+                client.EnableSsl = true;
+                client.Credentials = new NetworkCredential(_fromEmail, _password);
+
+                var message = new MailMessage
+                {
+                    From = new MailAddress(_fromEmail, "STC Bank"),
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = false
+                };
+                message.To.Add(toEmail);
+
+                await client.SendMailAsync(message);
+            }
+        }
+
     }
 }

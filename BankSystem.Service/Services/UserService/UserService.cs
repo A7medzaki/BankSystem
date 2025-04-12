@@ -1,4 +1,5 @@
-﻿using BankSystem.Data.Entities;
+﻿using BankSystem.Data.Contexts;
+using BankSystem.Data.Entities;
 using BankSystem.Repository.RepositoryInterfaces;
 using Microsoft.AspNetCore.Identity;
 
@@ -7,12 +8,14 @@ namespace BankSystem.Service.Services.UserService
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly BankingContext _context;
         private readonly IAccountRepository _accountRepository;
         private readonly IPasswordHasher<User> _passwordHasher;
 
-        public UserService(IUserRepository userRepository, IAccountRepository accountRepository, IPasswordHasher<User> passwordHasher)
+        public UserService(IUserRepository userRepository, BankingContext context, IAccountRepository accountRepository, IPasswordHasher<User> passwordHasher)
         {
             _userRepository = userRepository;
+            _context = context;
             _accountRepository = accountRepository;
             _passwordHasher = passwordHasher;
         }
