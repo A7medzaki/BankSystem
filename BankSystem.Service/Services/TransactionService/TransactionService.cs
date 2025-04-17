@@ -186,5 +186,71 @@ namespace BankSystem.Service.Services.TransactionService
             return $"Deposit successful. New Balance: {account.Balance}";
         }
 
+        public async Task<(bool success, string message)> TransferMoneyAsync(string fromAccountNumber, string toAccountNumber, decimal amount)
+        {
+            if (fromAccountNumber == toAccountNumber)
+                return (false, "Cannot transfer to the same account.");
+
+            var fromAccount = await _context.Accounts.Include(a => a.User)
+                .FirstOrDefaultAsync(a => a.AccountNumber == fromAccountNumber);
+            var toAccount = await _context.Accounts.Include(a => a.User)
+                .FirstOrDefaultAsync(a => a.AccountNumber == toAccountNumber);
+
+            if (fromAccount == null)
+                return (false, "Source account not found.");
+
+            if (toAccount == null)
+                return (false, "Destination account not found.");
+
+            if (amount <= 0)
+                return (false, "Transfer amount must be positive.");
+
+            if (fromAccount.Balance < amount)
+                return (false, "Insufficient balance.");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // خصم من حساب المرسل
+                fromAccount.Balance -= amount;
+                fromAccount.LastUpdatedAt = DateTime.Now;
+
+                var fromTransaction = new Transaction
+                {
+                    AccountID = fromAccount.Id,
+                    Amount = amount,
+                    Status = "Success",
+                    TransactionType = "TransferOut",
+                    UpdatedAt = DateTime.Now
+                };
+                _context.Transactions.Add(fromTransaction);
+
+                // إضافة لحساب المستلم
+                toAccount.Balance += amount;
+                toAccount.LastUpdatedAt = DateTime.Now;
+
+                var toTransaction = new Transaction
+                {
+                    AccountID = toAccount.Id,
+                    Amount = amount,
+                    Status = "Success",
+                    TransactionType = "TransferIn",
+                    UpdatedAt = DateTime.Now
+                };
+                _context.Transactions.Add(toTransaction);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return (true, $"Transfer of {amount} successfully from {fromAccountNumber} to {toAccountNumber}.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return (false, $"Transaction failed: {ex.Message}");
+            }
+        }
+
+
     }
 }

@@ -14,5 +14,8 @@ namespace BankSystem.Service.Services.TransactionService
         Task<string> InitiateDepositAsync(int accountId, decimal amount);
         Task<string> ConfirmDepositAsync(int accountId, int transactionId, string otp);
         Task<string> CustomerServiceConfirmDepositAsync(int transactionId, string otp);
+
+        Task<(bool success, string message)> TransferMoneyAsync(string fromAccountNumber, string toAccountNumber, decimal amount);
+
     }
 }

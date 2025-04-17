@@ -142,5 +142,20 @@ namespace BankSystem.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPost("transfer")]
+        public async Task<IActionResult> TransferMoneyAsync([FromQuery] string fromAccountNumber, [FromQuery] string toAccountNumber, [FromQuery] decimal amount)
+        {
+            try
+            {
+                var result = await _transactionService.TransferMoneyAsync(fromAccountNumber, toAccountNumber, amount);
+                return result.success ? Ok(result.message) : BadRequest(result.message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }

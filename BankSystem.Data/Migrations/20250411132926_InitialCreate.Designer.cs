@@ -4,6 +4,7 @@ using BankSystem.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,17 +12,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BankSystem.Data.Migrations
 {
     [DbContext(typeof(BankingContext))]
-    partial class BankingContextModelSnapshot : ModelSnapshot
+    [Migration("20250411132926_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-<<<<<<< Updated upstream
-                .HasAnnotation("ProductVersion", "8.0.14")
-=======
                 .HasAnnotation("ProductVersion", "9.0.4")
->>>>>>> Stashed changes
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -111,11 +110,7 @@ namespace BankSystem.Data.Migrations
                     b.Property<decimal>("Discount")
                         .HasColumnType("decimal(18,2)");
 
-<<<<<<< Updated upstream
-                    b.Property<DateTime?>("EndDate")
-=======
                     b.Property<DateTime>("EndDate")
->>>>>>> Stashed changes
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsActive")
@@ -124,22 +119,9 @@ namespace BankSystem.Data.Migrations
                     b.Property<int>("PartnerId")
                         .HasColumnType("int");
 
-<<<<<<< Updated upstream
-                    b.Property<DateTime?>("RenewalDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("SubscriptionName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-=======
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
-
->>>>>>> Stashed changes
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
