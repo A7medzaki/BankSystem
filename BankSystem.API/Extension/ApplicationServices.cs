@@ -15,21 +15,18 @@ namespace BankSystem.API.Extension
     {
         public static void AddApplicationServices(this IServiceCollection services)
         {
-<<<<<<< Updated upstream
             services.AddScoped<IRepository<Account>, AccountRepository>();
             services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IRepository<Transaction>, TransactionRepository>();
             services.AddScoped<IRepository<Subscription>, SubscriptionRepository>();
             services.AddScoped<IRepository<Partner>, PartnerRepository>();
             services.AddScoped<IRepository<User>, UserRepository>();
-=======
 
             services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
             services.AddScoped<IPartnerRepository, PartnerRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
->>>>>>> Stashed changes
 
             services.AddScoped<IAccountService, AccountService>();
             //services.AddScoped<ISubscriptionService, SubscriptionService>();

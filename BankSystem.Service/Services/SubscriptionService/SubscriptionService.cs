@@ -1,7 +1,5 @@
-<<<<<<< Updated upstream
-﻿using BankSystem.Data.Contexts;
+using BankSystem.Data.Contexts;
 using BankSystem.Data.Entities;
-using BankSystem.Repository.Repositories;
 using BankSystem.Repository.RepositoryInterfaces;
 using BankSystem.Service.Helper;
 
@@ -99,7 +97,7 @@ namespace BankSystem.Service.Services.SubscriptionService
             return await _subscriptionRepository.GetActiveSubscriptionByAccountIdAsync(accountId);
         }
     }
-=======
+}
 ﻿//using BankSystem.Data.Contexts;
 //using BankSystem.Data.Entities;
 //using BankSystem.Service.Helper;
@@ -214,6 +212,4 @@ namespace BankSystem.Service.Services.SubscriptionService
 //            await _context.SaveChangesAsync();
 //        }
 //    }
->>>>>>> Stashed changes
-
 //}
