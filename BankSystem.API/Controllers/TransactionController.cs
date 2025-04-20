@@ -156,6 +156,5 @@ namespace BankSystem.API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
     }
 }
