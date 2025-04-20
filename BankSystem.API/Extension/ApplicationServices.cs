@@ -3,6 +3,7 @@ using BankSystem.Repository.Repositories;
 using BankSystem.Repository.RepositoryInterfaces;
 using BankSystem.Service.Helper;
 using BankSystem.Service.Services.AccountService;
+using BankSystem.Service.Services.CheckService;
 using BankSystem.Service.Services.Security;
 using BankSystem.Service.Services.SubscriptionService;
 using BankSystem.Service.Services.TransactionService;
@@ -32,7 +33,7 @@ namespace BankSystem.API.Extension
             //services.AddScoped<ISubscriptionService, SubscriptionService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IUserService, UserService>();
-
+            services.AddScoped<IChequeService, ChequeService>();
             services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
             //services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 
