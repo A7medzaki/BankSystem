@@ -9,7 +9,8 @@
         public string? Status { get; set; }
         public decimal Balance { get; set; } = 0;
         public int UserID { get; set; }
-        public User User { get; set; }
+        public User User { get; set; } = null!;
+
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
     }

@@ -13,10 +13,6 @@ namespace BankSystem.Data.Entities
         public string PhoneNumber { get; set; }
         public string Email { get; set; }
         public string Location { get; set; }
-<<<<<<< Updated upstream
         public ICollection<Subscription> Subscriptions { get; set; }
-=======
-        public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
->>>>>>> Stashed changes
     }
 }
