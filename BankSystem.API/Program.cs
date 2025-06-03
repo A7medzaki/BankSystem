@@ -1,7 +1,5 @@
-
 using BankSystem.API.Extension;
 using BankSystem.Data.Contexts;
-using BankSystem.Data.Entities;
 using BankSystem.Repository.Repositories;
 using BankSystem.Repository.RepositoryInterfaces;
 using BankSystem.Service.Helper;
@@ -22,36 +20,40 @@ namespace BankSystem.API
 
             // Add services to the container.
 
+            // Configuring DbContext to use SQL Server with connection string
             builder.Services.AddDbContext<BankingContext>(options =>
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
-
+            // Add custom services and repositories
             builder.Services.AddApplicationServices();
 
+            // Add controllers (API endpoint handling)
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+            // Swagger configuration for API documentation
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // Build the application
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // Configure the HTTP request pipeline (Swagger UI and others)
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwagger();  // Enable Swagger endpoint
+                app.UseSwaggerUI();  // Enable Swagger UI
             }
 
-            app.UseStaticFiles();
-            app.UseHttpsRedirection();
+            app.UseStaticFiles();  // Enable static files to be served
+            app.UseHttpsRedirection();  // Redirect HTTP to HTTPS
 
-            app.UseAuthorization();
+            app.UseAuthorization();  // Authorization middleware
 
+            app.MapControllers();  // Map API controllers
 
-            app.MapControllers();
-
+            // Run the application
             app.Run();
         }
     }

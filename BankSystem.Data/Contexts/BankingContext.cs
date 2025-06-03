@@ -1,4 +1,5 @@
 ﻿using BankSystem.Data.Entities;
+using BankSystem.Data.Entities.Files;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
@@ -19,7 +20,12 @@ namespace BankSystem.Data.Contexts
         public DbSet<User> Users { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
-        public DbSet<Partner> Partners { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }
+
+        public DbSet<UploadedFile> UploadedFiles { get; set; }
+        public DbSet<BlacklistedFile> BlacklistedFiles { get; set; }
+
+        public DbSet<Complain> Complains { get; set; }
+
     }
 }

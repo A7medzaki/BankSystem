@@ -6,25 +6,68 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BankSystem.Data.Migrations
 {
     /// <inheritdoc />
+<<<<<<<< HEAD:BankSystem.Data/Migrations/20250419030125_STC_intial.cs
+    public partial class STC_intial : Migration
+========
     public partial class InitialMig : Migration
+>>>>>>>> 71d0fd24b3fb8f581dbcf7be2a22a4a82f035701:BankSystem.Data/Migrations/20250420132351_InitialMig.cs
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Partners",
+                name: "BlacklistedFiles",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    CompanyName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false)
+                    FileHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
+                    BlockedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Partners", x => x.Id);
+                    table.PrimaryKey("PK_BlacklistedFiles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Partner",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CompanyName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Location = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Partner", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UploadedFiles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FileHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FileType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FileSize = table.Column<long>(type: "bigint", nullable: false),
+                    TotalEngines = table.Column<int>(type: "int", nullable: false),
+                    MaliciousCount = table.Column<int>(type: "int", nullable: false),
+                    HarmlessCount = table.Column<int>(type: "int", nullable: false),
+                    SuspiciousCount = table.Column<int>(type: "int", nullable: false),
+                    UndetectedCount = table.Column<int>(type: "int", nullable: false),
+                    ScanDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ScanDetailsJson = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UploadedFiles", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -96,9 +139,9 @@ namespace BankSystem.Data.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Subscriptions_Partners_PartnerId",
+                        name: "FK_Subscriptions_Partner_PartnerId",
                         column: x => x.PartnerId,
-                        principalTable: "Partners",
+                        principalTable: "Partner",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -133,6 +176,12 @@ namespace BankSystem.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_BlacklistedFiles_FileHash",
+                table: "BlacklistedFiles",
+                column: "FileHash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Subscriptions_AccountId",
                 table: "Subscriptions",
                 column: "AccountId");
@@ -152,13 +201,19 @@ namespace BankSystem.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "BlacklistedFiles");
+
+            migrationBuilder.DropTable(
                 name: "Subscriptions");
 
             migrationBuilder.DropTable(
                 name: "Transactions");
 
             migrationBuilder.DropTable(
-                name: "Partners");
+                name: "UploadedFiles");
+
+            migrationBuilder.DropTable(
+                name: "Partner");
 
             migrationBuilder.DropTable(
                 name: "Accounts");

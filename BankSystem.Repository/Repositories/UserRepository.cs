@@ -3,24 +3,24 @@ using BankSystem.Data.Entities;
 using BankSystem.Repository.RepositoryInterfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace BankSystem.Repository.Repositories
+namespace BankSystem.Data.Repositories
 {
-    public class UserRepository : GenericRepository<User>, IUserRepository
+    public class UserRepository : IUserRepository
     {
         private readonly BankingContext _context;
 
-        public UserRepository(BankingContext context) : base(context)
+        public UserRepository(BankingContext context)
         {
             _context = context;
         }
 
-        public async Task<User> GetByEmailAsync(string email)
-        {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
-        }
-        public async Task<User> GetUserWithAccountAsync(int userId)
-        {
-            return await _context.Users.Include(u => u.Account).FirstOrDefaultAsync(u => u.Id == userId);
-        }
+        public async Task<IEnumerable<User>> GetAllAsync() => await _context.Users.ToListAsync();
+        public async Task<User?> GetByIdAsync(int id) => await _context.Users.FindAsync(id);
+        public async Task<User?> GetByEmailAsync(string email) => await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        public async Task<User?> GetByGmailAsync(string gmail) => await _context.Users.FirstOrDefaultAsync(u => u.Gmail == gmail);
+        public async Task<User?> GetByFacebookIdAsync(string facebookId) => await _context.Users.FirstOrDefaultAsync(u => u.FacebookId == facebookId);
+        public async Task AddAsync(User user) => await _context.Users.AddAsync(user);
+        public async Task DeleteAsync(User user) => _context.Users.Remove(user);
+        public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
     }
 }

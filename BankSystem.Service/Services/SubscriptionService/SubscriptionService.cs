@@ -98,7 +98,8 @@ namespace BankSystem.Service.Services.SubscriptionService
         }
     }
 }
-﻿//using BankSystem.Data.Contexts;
+//using BankSystem.Data.Contexts;
+//using BankSystem.Data.Contexts;
 //using BankSystem.Data.Entities;
 //using BankSystem.Service.Helper;
 //using Microsoft.EntityFrameworkCore;
@@ -212,4 +213,5 @@ namespace BankSystem.Service.Services.SubscriptionService
 //            await _context.SaveChangesAsync();
 //        }
 //    }
+
 //}

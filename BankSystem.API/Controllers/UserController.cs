@@ -1,110 +1,107 @@
-﻿using BankSystem.Service.Services.UserService;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity.Data;
+﻿using BankSystem.Data.Entities;
+using BankSystem.Service.Services;
+using BankSystem.Service.Services.UserService.BankSystem.Service.Services.UserService;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BankSystem.API.Controllers
+namespace STC.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : ControllerBase
+    public class UsersController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly IUserService _service;
 
-        public UserController(IUserService userService)
+        public UsersController(IUserService service)
         {
-            _userService = userService;
+            _service = service;
         }
 
-        //[HttpPost("register")]
-        ///public async Task<IActionResult> RegisterUserAsync([FromBody] RegisterRequest request)
-        //{
-        //    try
-        //    {
-        //        var result = await _userService.RegisterUserAsync(request.Email, request.Password);
-        //        if (result == "User already exists.")
-        //        {
-        //            return Conflict(result);  // 409 Conflict
-        //        }
-
-        //        return Ok(result);  // 200 OK
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(ex.Message);  // 400 Bad Request
-        //    }
-        //}
-
-        // Get User by ID
-
-        [HttpGet("{userId}")]
-        public async Task<IActionResult> GetUserByIdAsync(int userId)
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] UserRegisterDto userDto)
         {
-            try
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var (exists, reason) = await _service.CheckDuplicateAsync(userDto.Email, userDto.Gmail, userDto.FacebookId);
+            if (exists) return BadRequest(reason);
+
+            var user = new User
             {
-                var user = await _userService.GetUserByIdAsync(userId);
-                return Ok(user);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);  // 404 Not Found
-            }
+                UserName = userDto.UserName,
+                Email = userDto.Email,
+                HashedPassword = userDto.HashedPassword ,
+                PhoneNumber = userDto.PhoneNumber,
+                Gmail = userDto.Gmail?? String.Empty,
+                FacebookId = userDto.FacebookId?? String.Empty,
+                UserCreatedAt = DateTime.UtcNow
+            };
+
+            await _service.CreateUserAsync(user);
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
         }
 
-        [HttpGet("with-account/{userId}")]
-        public async Task<IActionResult> GetUserWithAccountAsync(int userId)
+        [HttpPost("Google")]
+        public async Task<IActionResult> GoogleRegister([FromBody] UserRegisterDto googleDto)
         {
-            try
+            var (exists, reason) = await _service.CheckDuplicateAsync(googleDto.Email, googleDto.Gmail);
+            if (exists) return BadRequest(reason);
+
+            var user = new User
             {
-                var user = await _userService.GetUserWithAccountAsync(userId);
-                return Ok(user);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);  // 404 Not Found
-            }
+                UserName = googleDto.UserName,
+                Email = googleDto.Email,
+                Gmail = googleDto.Gmail,
+                HashedPassword = "gmail registration",
+                PhoneNumber = "gmail registration",
+                UserCreatedAt = DateTime.UtcNow
+            };
+
+            await _service.CreateUserAsync(user);
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
         }
 
-        //[HttpPut("{userId}")]
-        ///public async Task<IActionResult> UpdateUserAsync(int userId, [FromBody] UpdateUserRequest request)
-        //{
-        //    try
-        //    {
-        //        var result = await _userService.UpdateUserAsync(userId, request.Email, request.Name);
-        //        return Ok(result);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return NotFound(ex.Message);  // 404 Not Found
-        //    }
-        //}
-
-        [HttpDelete("{userId}")]
-        public async Task<IActionResult> DeleteUserAsync(int userId)
+        [HttpPost("Facebook")]
+        public async Task<IActionResult> FacebookRegister([FromBody] UserRegisterDto fbDto)
         {
-            try
+            var (exists, reason) = await _service.CheckDuplicateAsync(fbDto.Email, null, fbDto.FacebookId);
+            if (exists) return BadRequest(reason);
+
+            var user = new User
             {
-                var result = await _userService.DeleteUserAsync(userId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);  // 404 Not Found
-            }
+                UserName = fbDto.UserName,
+                Email = fbDto.Email,
+                FacebookId = fbDto.FacebookId,
+                HashedPassword = "facebook registration",
+                PhoneNumber = "facebook registration",
+                UserCreatedAt = DateTime.UtcNow
+            };
+
+            await _service.CreateUserAsync(user);
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllUsersAsync()
+        public async Task<IActionResult> GetUsers() => Ok(await _service.GetAllUsersAsync());
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUserById(int id)
         {
-            try
-            {
-                var users = await _userService.GetAllUsersAsync();
-                return Ok(users);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);  // 400 Bad Request
-            }
+            var user = await _service.GetUserByIdAsync(id);
+            return user == null ? NotFound("User not found.") : Ok(user);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] User user)
+        {
+            if (id != user.Id) return BadRequest("ID mismatch.");
+            var updated = await _service.UpdateUserAsync(id, user);
+            return updated ? NoContent() : NotFound("User not found.");
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var deleted = await _service.DeleteUserAsync(id);
+            return deleted ? NoContent() : NotFound("User not found.");
         }
     }
 }

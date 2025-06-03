@@ -1,108 +1,66 @@
-﻿using BankSystem.Data.Contexts;
-using BankSystem.Data.Entities;
+﻿using BankSystem.Data.Entities;
+using BankSystem.Data.Repositories;
 using BankSystem.Repository.RepositoryInterfaces;
-using Microsoft.AspNetCore.Identity;
+using BankSystem.Service.Services.UserService.BankSystem.Service.Services.UserService;
 
 namespace BankSystem.Service.Services.UserService
 {
     public class UserService : IUserService
     {
-        private readonly IUserRepository _userRepository;
-        private readonly BankingContext _context;
-        private readonly IAccountRepository _accountRepository;
-        private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly IUserRepository _repository;
 
-        public UserService(IUserRepository userRepository, BankingContext context, IAccountRepository accountRepository, IPasswordHasher<User> passwordHasher)
+        public UserService(IUserRepository repository)
         {
-            _userRepository = userRepository;
-            _context = context;
-            _accountRepository = accountRepository;
-            _passwordHasher = passwordHasher;
+            _repository = repository;
         }
 
-        public async Task<string> RegisterUserAsync(string email, string password, string name)
+        public async Task<IEnumerable<User>> GetAllUsersAsync() => await _repository.GetAllAsync();
+
+        public async Task<User?> GetUserByIdAsync(int id) => await _repository.GetByIdAsync(id);
+
+        public async Task<bool> CreateUserAsync(User user)
         {
-            var existingUser = await _userRepository.GetByEmailAsync(email);
-            if (existingUser != null)
-            {
-                return "User already exists.";
-            }
-
-            string hashedPassword = _passwordHasher.HashPassword(new User(), password);
-
-            var user = new User
-            {
-                Email = email,
-                Name = name,
-                HashedPassword = hashedPassword
-            };
-
-            await _userRepository.AddAsync(user);
-
-            var account = new Account
-            {
-                UserID = user.Id,
-                Balance = 0
-            };
-            await _accountRepository.AddAsync(account);
-
-            return "User registered successfully.";
+            await _repository.AddAsync(user);
+            await _repository.SaveChangesAsync();
+            return true;
         }
-        public async Task<User> GetUserByIdAsync(int userId)
+
+        public async Task<bool> UpdateUserAsync(int id, User updatedUser)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                throw new Exception("User not found.");
-            }
-            return user;
+            var existing = await _repository.GetByIdAsync(id);
+            if (existing == null) return false;
+
+            existing.UserName = updatedUser.UserName;
+            existing.Email = updatedUser.Email;
+            existing.HashedPassword = updatedUser.HashedPassword;
+            existing.PhoneNumber = updatedUser.PhoneNumber;
+
+            await _repository.SaveChangesAsync();
+            return true;
         }
-        public async Task<User> GetUserWithAccountAsync(int userId)
+
+        public async Task<bool> DeleteUserAsync(int id)
         {
-            var user = await _userRepository.GetUserWithAccountAsync(userId);
-            if (user == null)
-            {
-                throw new Exception("User not found.");
-            }
-            return user;
+            var user = await _repository.GetByIdAsync(id);
+            if (user == null) return false;
+
+            await _repository.DeleteAsync(user);
+            await _repository.SaveChangesAsync();
+            return true;
         }
-        public async Task<string> UpdateUserAsync(int userId, string email, string name)
+
+        public async Task<(bool, string)> CheckDuplicateAsync(string email, string? gmail = null, string? facebookId = null)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                throw new Exception("User not found.");
-            }
+            if (await _repository.GetByEmailAsync(email) is not null)
+                return (true, "Email already exists.");
 
-            user.Email = email;
-            user.Name = name;
+            if (!string.IsNullOrEmpty(gmail) && await _repository.GetByGmailAsync(gmail) is not null)
+                return (true, "Gmail already registered.");
 
-            await _userRepository.UpdateAsync(user);
+            if (!string.IsNullOrEmpty(facebookId) && await _repository.GetByFacebookIdAsync(facebookId) is not null)
+                return (true, "Facebook ID already registered.");
 
-            return "User updated successfully.";
-        }
-        public async Task<string> DeleteUserAsync(int userId)
-        {
-            var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null)
-            {
-                throw new Exception("User not found.");
-            }
-
-            var account = await _accountRepository.GetAccountByUserIdAsync(userId);
-            if (account != null)
-            {
-                await _accountRepository.DeleteAsync(account.Id);
-            }
-
-            await _userRepository.DeleteAsync(userId);
-
-            return "User deleted successfully.";
-        }
-        public async Task<IEnumerable<User>> GetAllUsersAsync()
-        {
-            return await _userRepository.GetAllAsync();
+            return (false, string.Empty);
         }
     }
-
 }
