@@ -34,7 +34,7 @@ namespace BankSystem.Api.Controllers
 
             var user = await _dbContext.Users
                                        .Include(u => u.Account)
-                                       .FirstOrDefaultAsync(u => u.Name == fromAccountName);
+                                       .FirstOrDefaultAsync(u => u.UserName == fromAccountName);
             if (user == null)
                 return NotFound("Sender account not found.");
 

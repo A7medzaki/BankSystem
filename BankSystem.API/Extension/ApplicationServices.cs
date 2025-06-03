@@ -27,8 +27,6 @@ namespace BankSystem.API.Extension
             services.AddScoped<IRepository<Account>, AccountRepository>();
             services.AddScoped<IRepository<Transaction>, TransactionRepository>();
             services.AddScoped<IRepository<Subscription>, SubscriptionRepository>();
-            services.AddScoped<IRepository<Partner>, PartnerRepository>();
-            services.AddScoped<IRepository<User>, UserRepository>();
 
             // Specific Repositories
             services.AddScoped<IAccountRepository, AccountRepository>();
