@@ -211,7 +211,6 @@ namespace BankSystem.Service.Services.TransactionService
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // خصم من حساب المرسل
                 fromAccount.Balance -= amount;
                 fromAccount.LastUpdatedAt = DateTime.Now;
 
@@ -225,7 +224,6 @@ namespace BankSystem.Service.Services.TransactionService
                 };
                 _context.Transactions.Add(fromTransaction);
 
-                // إضافة لحساب المستلم
                 toAccount.Balance += amount;
                 toAccount.LastUpdatedAt = DateTime.Now;
 
@@ -250,7 +248,5 @@ namespace BankSystem.Service.Services.TransactionService
                 return (false, $"Transaction failed: {ex.Message}");
             }
         }
-
-
     }
 }

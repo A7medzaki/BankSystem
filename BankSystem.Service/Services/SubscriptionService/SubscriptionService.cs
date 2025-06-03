@@ -1,6 +1,5 @@
-﻿using BankSystem.Data.Contexts;
+using BankSystem.Data.Contexts;
 using BankSystem.Data.Entities;
-using BankSystem.Repository.Repositories;
 using BankSystem.Repository.RepositoryInterfaces;
 using BankSystem.Service.Helper;
 
@@ -99,6 +98,7 @@ namespace BankSystem.Service.Services.SubscriptionService
         }
     }
 }
+//using BankSystem.Data.Contexts;
 //using BankSystem.Data.Contexts;
 //using BankSystem.Data.Entities;
 //using BankSystem.Service.Helper;

@@ -6,7 +6,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BankSystem.Data.Migrations
 {
     /// <inheritdoc />
+<<<<<<<< HEAD:BankSystem.Data/Migrations/20250419030125_STC_intial.cs
     public partial class STC_intial : Migration
+========
+    public partial class InitialMig : Migration
+>>>>>>>> 71d0fd24b3fb8f581dbcf7be2a22a4a82f035701:BankSystem.Data/Migrations/20250420132351_InitialMig.cs
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

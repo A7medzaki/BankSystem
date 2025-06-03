@@ -12,8 +12,13 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BankSystem.Data.Migrations
 {
     [DbContext(typeof(BankingContext))]
+<<<<<<<< HEAD:BankSystem.Data/Migrations/20250419030125_STC_intial.Designer.cs
     [Migration("20250419030125_STC_intial")]
     partial class STC_intial
+========
+    [Migration("20250420132351_InitialMig")]
+    partial class InitialMig
+>>>>>>>> 71d0fd24b3fb8f581dbcf7be2a22a4a82f035701:BankSystem.Data/Migrations/20250420132351_InitialMig.Designer.cs
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

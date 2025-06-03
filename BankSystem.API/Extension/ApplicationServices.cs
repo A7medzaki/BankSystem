@@ -7,6 +7,9 @@ using BankSystem.Service.Services.AccountService;
 using BankSystem.Service.Services.ComplainService;
 using BankSystem.Service.Services.FileHashService;
 using BankSystem.Service.Services.FileScanService;
+using BankSystem.Service.Services.CheckService;
+using BankSystem.Service.Services.Security;
+using BankSystem.Service.Services.SubscriptionService;
 using BankSystem.Service.Services.TransactionService;
 using BankSystem.Service.Services.UserService;
 using BankSystem.Service.Services.UserService.BankSystem.Service.Services.UserService;
@@ -18,11 +21,14 @@ namespace BankSystem.API.Extension
     {
         public static void AddApplicationServices(this IServiceCollection services)
         {
-            // Generic Repositories
+
+            services.AddScoped<IRepository<Account>, AccountRepository>();
             services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IRepository<Account>, AccountRepository>();
             services.AddScoped<IRepository<Transaction>, TransactionRepository>();
             services.AddScoped<IRepository<Subscription>, SubscriptionRepository>();
+            services.AddScoped<IRepository<Partner>, PartnerRepository>();
+            services.AddScoped<IRepository<User>, UserRepository>();
 
             // Specific Repositories
             services.AddScoped<IAccountRepository, AccountRepository>();
@@ -43,9 +49,10 @@ namespace BankSystem.API.Extension
             services.AddScoped<IFileScanService, FileScanService>();
             services.AddScoped<IComplainRepository, ComplainRepository>();
             services.AddScoped<IComplainService, ComplainService>();
+            services.AddScoped<IChequeService, ChequeService>();
+            services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 
-            // Correctly register VirusTotalService (using config file)
             services.AddScoped<VirusTotalService>(provider =>
                 new VirusTotalService(provider.GetRequiredService<IConfiguration>()["VirusTotal:ApiKey"]));
 
