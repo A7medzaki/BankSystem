@@ -1,13 +1,5 @@
 using BankSystem.API.Extension;
 using BankSystem.Data.Contexts;
-using BankSystem.Repository.Repositories;
-using BankSystem.Repository.RepositoryInterfaces;
-using BankSystem.Service.Helper;
-using BankSystem.Service.Services.AccountService;
-using BankSystem.Service.Services.Security;
-using BankSystem.Service.Services.SubscriptionService;
-using BankSystem.Service.Services.TransactionService;
-using BankSystem.Service.Services.UserService;
 using Microsoft.EntityFrameworkCore;
 
 namespace BankSystem.API
