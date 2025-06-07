@@ -21,6 +21,7 @@ namespace BankSystem.Data.Contexts
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Subscription> Subscriptions { get; set; }
+        public DbSet<ReportHistory> ReportHistories { get; set; }
 
         public DbSet<UploadedFile> UploadedFiles { get; set; }
         public DbSet<BlacklistedFile> BlacklistedFiles { get; set; }

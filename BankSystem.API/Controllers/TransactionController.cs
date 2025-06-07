@@ -1,4 +1,5 @@
 ﻿using BankSystem.Service.Services.TransactionService;
+using BankSystem.Service.Services.TransactionService.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -73,12 +74,17 @@ namespace BankSystem.API.Controllers
             }
         }
 
-        [HttpPost("withdraw/{accountId}")]
-        public async Task<IActionResult> InitiateWithdrawAsync(int accountId, [FromQuery] decimal amount)
+
+
+        [HttpPost("withdraw/initiate")]
+        public async Task<IActionResult> InitiateWithdrawAsync([FromBody] WithdrawRequestDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                var result = await _transactionService.InitiateWithdrawAsync(accountId, amount);
+                var result = await _transactionService.InitiateWithdrawAsync(dto.AccountId, dto.Amount);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -88,11 +94,14 @@ namespace BankSystem.API.Controllers
         }
 
         [HttpPost("withdraw/confirm")]
-        public async Task<IActionResult> ConfirmWithdrawAsync([FromQuery] int accountId, [FromQuery] decimal amount, [FromQuery] string otp)
+        public async Task<IActionResult> ConfirmWithdrawAsync([FromBody] ConfirmWithdrawDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                var result = await _transactionService.ConfirmWithdrawAsync(accountId, amount, otp);
+                var result = await _transactionService.ConfirmWithdrawAsync(dto.AccountId, dto.Amount, dto.OTP);
                 return result.success ? Ok(result.message) : BadRequest(result.message);
             }
             catch (Exception ex)
@@ -101,12 +110,17 @@ namespace BankSystem.API.Controllers
             }
         }
 
-        [HttpPost("deposit/{accountId}")]
-        public async Task<IActionResult> InitiateDepositAsync(int accountId, [FromQuery] decimal amount)
+
+
+        [HttpPost("deposit/initiate")]
+        public async Task<IActionResult> InitiateDepositAsync([FromBody] DepositRequestDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                var result = await _transactionService.InitiateDepositAsync(accountId, amount);
+                var result = await _transactionService.InitiateDepositAsync(dto.AccountId, dto.Amount);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -116,11 +130,14 @@ namespace BankSystem.API.Controllers
         }
 
         [HttpPost("deposit/confirm")]
-        public async Task<IActionResult> ConfirmDepositAsync([FromQuery] int accountId, [FromQuery] int transactionId, [FromQuery] string otp)
+        public async Task<IActionResult> ConfirmDepositAsync([FromBody] ConfirmDepositDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                var result = await _transactionService.ConfirmDepositAsync(accountId, transactionId, otp);
+                var result = await _transactionService.ConfirmDepositAsync(dto.AccountId, dto.TransactionId, dto.OTP);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -130,11 +147,14 @@ namespace BankSystem.API.Controllers
         }
 
         [HttpPost("deposit/customer-service-confirm")]
-        public async Task<IActionResult> CustomerServiceConfirmDepositAsync([FromQuery] int transactionId, [FromQuery] string otp)
+        public async Task<IActionResult> CustomerServiceConfirmDepositAsync([FromBody] CustomerServiceConfirmDepositDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                var result = await _transactionService.CustomerServiceConfirmDepositAsync(transactionId, otp);
+                var result = await _transactionService.CustomerServiceConfirmDepositAsync(dto.TransactionId, dto.OTP);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -143,18 +163,26 @@ namespace BankSystem.API.Controllers
             }
         }
 
-        [HttpPost("transfer")]
-        public async Task<IActionResult> TransferMoneyAsync([FromQuery] string fromAccountNumber, [FromQuery] string toAccountNumber, [FromQuery] decimal amount)
+
+
+        [HttpPost("initiate-transfer")]
+        public async Task<IActionResult> InitiateTransfer([FromBody] InitiateTransferDto dto)
         {
-            try
-            {
-                var result = await _transactionService.TransferMoneyAsync(fromAccountNumber, toAccountNumber, amount);
-                return result.success ? Ok(result.message) : BadRequest(result.message);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var result = await _transactionService.InitiateTransferFundsAsync(dto.SenderAccountId, dto.ReceiverAccountNumber, dto.Amount);
+            if (result.StartsWith("Failed") || result.Contains("not found") || result.Contains("Insufficient") || result.Contains("must be"))
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpPost("confirm-transfer")]
+        public async Task<IActionResult> ConfirmTransfer([FromBody] ConfirmTransferDto dto)
+        {
+            var result = await _transactionService.ConfirmTransferFundsAsync(dto.SenderAccountId, dto.ReceiverAccountNumber, dto.Amount, dto.OTP);
+            if (result.StartsWith("Failed") || result.Contains("not found") || result.Contains("Invalid") || result.Contains("Insufficient") || result.Contains("must be"))
+                return BadRequest(result);
+
+            return Ok(result);
         }
     }
 }

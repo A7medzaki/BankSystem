@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BankSystem.Data.Entities
+﻿namespace BankSystem.Data.Entities
 {
     public class Complain
     {
@@ -18,7 +11,5 @@ namespace BankSystem.Data.Entities
         public int UserId { get; set; }
 
         public User User { get; set; } = null!;
-
-
     }
 }

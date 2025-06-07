@@ -9,13 +9,17 @@ namespace BankSystem.Service.Services.TransactionService
         Task<bool> CancelTransactionAsync(int transactionId);
         Task<string> GetTransactionStatusAsync(int transactionId);
 
+
         Task<string> InitiateWithdrawAsync(int accountId, decimal amount);
         Task<(bool success, string message, decimal? newBalance)> ConfirmWithdrawAsync(int accountId, decimal amount, string otp);
+
+
         Task<string> InitiateDepositAsync(int accountId, decimal amount);
         Task<string> ConfirmDepositAsync(int accountId, int transactionId, string otp);
         Task<string> CustomerServiceConfirmDepositAsync(int transactionId, string otp);
 
-        Task<(bool success, string message)> TransferMoneyAsync(string fromAccountNumber, string toAccountNumber, decimal amount);
 
+        Task<string> InitiateTransferFundsAsync(int senderAccountId, string receiverAccountNumber, decimal amount);
+        Task<string> ConfirmTransferFundsAsync(int senderAccountId, string receiverAccountNumber, decimal amount, string otp);
     }
 }

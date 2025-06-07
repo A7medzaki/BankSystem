@@ -10,8 +10,11 @@
         public DateTime? EndDate { get; set; }
         public DateTime? RenewalDate { get; set; }
         public bool IsActive { get; set; }
+
         public int AccountId { get; set; }
         public Account Account { get; set; }
+        
+        
         public int PartnerId { get; set; }
         public Partner Partner { get; set; }
     }

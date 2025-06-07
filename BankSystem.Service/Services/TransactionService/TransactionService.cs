@@ -1,6 +1,8 @@
 ﻿using BankSystem.Data.Contexts;
 using BankSystem.Data.Entities;
+using BankSystem.Repository.RepositoryInterfaces;
 using BankSystem.Service.Helper;
+using BankSystem.Service.Services.ReportService;
 using Microsoft.EntityFrameworkCore;
 
 namespace BankSystem.Service.Services.TransactionService
@@ -10,12 +12,18 @@ namespace BankSystem.Service.Services.TransactionService
         private readonly BankingContext _context;
         private readonly OTPService _otpService;
         private readonly EmailService _emailService;
+        private readonly ITransactionRepository _transactionRepository;
+        private readonly IAccountRepository _accountRepository;
+        private readonly IReportService _reportService;
 
-        public TransactionService(BankingContext context, OTPService otpService, EmailService emailService)
+        public TransactionService(BankingContext context, OTPService otpService, EmailService emailService, ITransactionRepository transactionRepository, IAccountRepository accountRepository, IReportService reportService)
         {
             _context = context;
             _otpService = otpService;
             _emailService = emailService;
+            _transactionRepository = transactionRepository;
+            _accountRepository = accountRepository;
+            _reportService = reportService;
         }
 
         public async Task<List<Transaction>> GetTransactionHistoryAsync(int accountId, DateTime? startDate = null, DateTime? endDate = null)
@@ -56,6 +64,7 @@ namespace BankSystem.Service.Services.TransactionService
             return transaction?.Status ?? "Not Found";
         }
 
+        
         public async Task<string> InitiateWithdrawAsync(int accountId, decimal amount)
         {
             var account = await _context.Accounts.Include(a => a.User).FirstOrDefaultAsync(a => a.Id == accountId);
@@ -106,6 +115,36 @@ namespace BankSystem.Service.Services.TransactionService
                 };
 
                 _context.Transactions.Add(completedTransaction);
+
+                var reference = Guid.NewGuid().ToString().Substring(0, 8);
+
+                var reportDto = new TransactionReport
+                {
+                    UserFullName = account.User.UserName,
+                    AccountNumber = account.AccountNumber,
+                    TransactionType = "Withdraw",
+                    Amount = amount,
+                    Date = DateTime.Now,
+                    ReferenceNumber = reference,
+                    Status = "Success"
+                };
+
+                var pdfBytes = _reportService.GenerateTransactionReceiptPdf(reportDto);
+
+                var reportHistory = new ReportHistory
+                {
+                    AccountId = account.Id,
+                    TransactionType = "Withdraw",
+                    Amount = amount,
+                    Date = DateTime.Now,
+                    ReferenceNumber = reference,
+                    Status = "Success",
+                    PdfBytes = pdfBytes
+                };
+
+                _context.ReportHistories.Add(reportHistory);
+
+
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -117,6 +156,8 @@ namespace BankSystem.Service.Services.TransactionService
                 return (false, "Transaction failed.", null);
             }
         }
+       
+        
         public async Task<string> InitiateDepositAsync(int accountId, decimal amount)
         {
             var account = await _context.Accounts.Include(a => a.User).FirstOrDefaultAsync(a => a.Id == accountId);
@@ -176,76 +217,211 @@ namespace BankSystem.Service.Services.TransactionService
                 return "OTP invalid or expired. Transaction canceled.";
             }
 
-            account.Balance += transaction.Amount;
-            transaction.Status = "Success";
-            account.LastUpdatedAt = DateTime.Now;
-            user.OTP = null;
-            user.OTPGeneratedAt = null;
-
-            await _context.SaveChangesAsync();
-            return $"Deposit successful. New Balance: {account.Balance}";
-        }
-
-        public async Task<(bool success, string message)> TransferMoneyAsync(string fromAccountNumber, string toAccountNumber, decimal amount)
-        {
-            if (fromAccountNumber == toAccountNumber)
-                return (false, "Cannot transfer to the same account.");
-
-            var fromAccount = await _context.Accounts.Include(a => a.User)
-                .FirstOrDefaultAsync(a => a.AccountNumber == fromAccountNumber);
-            var toAccount = await _context.Accounts.Include(a => a.User)
-                .FirstOrDefaultAsync(a => a.AccountNumber == toAccountNumber);
-
-            if (fromAccount == null)
-                return (false, "Source account not found.");
-
-            if (toAccount == null)
-                return (false, "Destination account not found.");
-
-            if (amount <= 0)
-                return (false, "Transfer amount must be positive.");
-
-            if (fromAccount.Balance < amount)
-                return (false, "Insufficient balance.");
-
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                fromAccount.Balance -= amount;
-                fromAccount.LastUpdatedAt = DateTime.Now;
+                account.Balance += transaction.Amount;
+                account.LastUpdatedAt = DateTime.Now;
 
-                var fromTransaction = new Transaction
+                transaction.Status = "Success";
+                user.OTP = null;
+                user.OTPGeneratedAt = null;
+
+                var reference = Guid.NewGuid().ToString().Substring(0, 8);
+
+                var reportDto = new TransactionReport
                 {
-                    AccountID = fromAccount.Id,
-                    Amount = amount,
-                    Status = "Success",
-                    TransactionType = "TransferOut",
-                    UpdatedAt = DateTime.Now
+                    UserFullName = user.UserName,
+                    AccountNumber = account.AccountNumber,
+                    TransactionType = "Deposit",
+                    Amount = transaction.Amount,
+                    Date = DateTime.Now,
+                    ReferenceNumber = reference,
+                    Status = "Success"
                 };
-                _context.Transactions.Add(fromTransaction);
 
-                toAccount.Balance += amount;
-                toAccount.LastUpdatedAt = DateTime.Now;
+                var pdfBytes = _reportService.GenerateTransactionReceiptPdf(reportDto);
 
-                var toTransaction = new Transaction
+                var reportHistory = new ReportHistory
                 {
-                    AccountID = toAccount.Id,
-                    Amount = amount,
+                    AccountId = account.Id,
+                    TransactionType = "Deposit",
+                    Amount = transaction.Amount,
+                    Date = DateTime.Now,
+                    ReferenceNumber = reference,
                     Status = "Success",
-                    TransactionType = "TransferIn",
-                    UpdatedAt = DateTime.Now
+                    PdfBytes = pdfBytes
                 };
-                _context.Transactions.Add(toTransaction);
+
+                _context.ReportHistories.Add(reportHistory);
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                await dbTransaction.CommitAsync();
 
-                return (true, $"Transfer of {amount} successfully from {fromAccountNumber} to {toAccountNumber}.");
+                return $"Deposit successful. New Balance: {account.Balance}";
+            }
+            catch
+            {
+                await dbTransaction.RollbackAsync();
+                return "Transaction failed.";
+            }
+        }
+
+
+        public async Task<string> InitiateTransferFundsAsync(int senderAccountId, string receiverAccountNumber, decimal amount)
+        {
+            try
+            {
+                var senderAccount = await _accountRepository.GetByIdAsync(senderAccountId);
+                if (senderAccount == null)
+                    return "Sender account not found.";
+
+                var receiverAccount = await _accountRepository.GetByAccountNumberAsync(receiverAccountNumber);
+                if (receiverAccount == null)
+                    return "Receiver account not found.";
+
+                if (amount <= 0)
+                    return "Transfer amount must be positive.";
+
+                if (senderAccount.Balance < amount)
+                    return "Insufficient balance.";
+
+                var otp = _otpService.GenerateOTP();
+                senderAccount.User.OTP = otp;
+                senderAccount.User.OTPGeneratedAt = DateTime.UtcNow;
+
+                var transaction = new Transaction
+                {
+                    AccountID = senderAccountId,
+                    Amount = amount,
+                    Status = "Pending",
+                    TransactionType = "Transfer",
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await _transactionRepository.AddAsync(transaction);
+                await _accountRepository.UpdateAsync(senderAccount);
+
+                await _emailService.SendEmailAsync(senderAccount.User.Email, otp, transaction.Id);
+
+                return $"OTP sent for transfer. Transaction ID: {transaction.Id}";
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
-                return (false, $"Transaction failed: {ex.Message}");
+                return $"Failed to initiate transfer: {ex.Message}";
+            }
+        }
+        public async Task<string> ConfirmTransferFundsAsync(int senderAccountId, string receiverAccountNumber, decimal amount, string otp)
+        {
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var senderAccount = await _accountRepository.GetByIdAsync(senderAccountId);
+                if (senderAccount == null)
+                    return "Sender account not found.";
+
+                var receiverAccount = await _accountRepository.GetByAccountNumberAsync(receiverAccountNumber);
+                if (receiverAccount == null)
+                    return "Receiver account not found.";
+
+                if (amount <= 0)
+                    return "Transfer amount must be positive.";
+
+                if (!_otpService.ValidateOTP(otp, senderAccount.User.OTP, senderAccount.User.OTPGeneratedAt ?? DateTime.MinValue))
+                    return "Invalid or expired OTP.";
+
+                if (senderAccount.Balance < amount)
+                    return "Insufficient balance.";
+
+                senderAccount.Balance -= amount;
+                senderAccount.LastUpdatedAt = DateTime.UtcNow;
+
+                receiverAccount.Balance += amount;
+                receiverAccount.LastUpdatedAt = DateTime.UtcNow;
+
+                var fromReference = Guid.NewGuid().ToString().Substring(0, 8);
+                var toReference = Guid.NewGuid().ToString().Substring(0, 8);
+
+                var completedTransaction = new Transaction
+                {
+                    AccountID = senderAccountId,
+                    Amount = amount,
+                    Status = "Success",
+                    TransactionType = "TransferOut",
+                    UpdatedAt = DateTime.UtcNow
+                };
+                await _transactionRepository.AddAsync(completedTransaction);
+
+                var receivedTransaction = new Transaction
+                {
+                    AccountID = receiverAccount.Id,
+                    Amount = amount,
+                    Status = "Success",
+                    TransactionType = "TransferIn",
+                    UpdatedAt = DateTime.UtcNow
+                };
+                await _transactionRepository.AddAsync(receivedTransaction);
+
+                var fromReport = new TransactionReport
+                {
+                    UserFullName = senderAccount.User.UserName,
+                    AccountNumber = senderAccount.AccountNumber,
+                    TransactionType = "TransferOut",
+                    Amount = amount,
+                    Date = DateTime.UtcNow,
+                    ReferenceNumber = fromReference,
+                    Status = "Success"
+                };
+                var fromPdf = _reportService.GenerateTransactionReceiptPdf(fromReport);
+                _context.ReportHistories.Add(new ReportHistory
+                {
+                    AccountId = senderAccount.Id,
+                    TransactionType = "TransferOut",
+                    Amount = amount,
+                    Date = DateTime.UtcNow,
+                    ReferenceNumber = fromReference,
+                    Status = "Success",
+                    PdfBytes = fromPdf
+                });
+
+                var toReport = new TransactionReport
+                {
+                    UserFullName = receiverAccount.User.UserName,
+                    AccountNumber = receiverAccount.AccountNumber,
+                    TransactionType = "TransferIn",
+                    Amount = amount,
+                    Date = DateTime.UtcNow,
+                    ReferenceNumber = toReference,
+                    Status = "Success"
+                };
+                var toPdf = _reportService.GenerateTransactionReceiptPdf(toReport);
+                _context.ReportHistories.Add(new ReportHistory
+                {
+                    AccountId = receiverAccount.Id,
+                    TransactionType = "TransferIn",
+                    Amount = amount,
+                    Date = DateTime.UtcNow,
+                    ReferenceNumber = toReference,
+                    Status = "Success",
+                    PdfBytes = toPdf
+                });
+
+                await _accountRepository.UpdateAsync(senderAccount);
+                await _accountRepository.UpdateAsync(receiverAccount);
+
+                await _context.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+
+                senderAccount.User.OTP = null;
+                senderAccount.User.OTPGeneratedAt = null;
+                await _accountRepository.UpdateAsync(senderAccount);
+
+                return "Transfer successful.";
+            }
+            catch (Exception ex)
+            {
+                await dbTransaction.RollbackAsync();
+                return $"Transfer failed: {ex.Message}";
             }
         }
     }

@@ -12,6 +12,7 @@ using BankSystem.Service.Services.TransactionService;
 using BankSystem.Service.Services.UserService;
 using BankSystem.Service.Services.UserService.BankSystem.Service.Services.UserService;
 using Microsoft.AspNetCore.Identity;
+using BankSystem.Service.Services.ReportService;
 
 namespace BankSystem.API.Extension
 {
@@ -39,6 +40,7 @@ namespace BankSystem.API.Extension
             services.AddScoped<IAccountService, AccountService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IReportService, ReportService>();
 
             services.AddScoped<IFileHashService, FileHashService>();
             services.AddScoped<FileScanService>();
