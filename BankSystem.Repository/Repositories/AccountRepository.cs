@@ -14,11 +14,11 @@ namespace BankSystem.Repository.Repositories
             _context = context;
         }
 
-        public async Task<Account> GetAccountByUserIdAsync(int userId)
+        public async Task<Account> GetByIdWithUserAsync(int id)
         {
-            return await _context.Accounts.Include(a => a.Transactions)
-                                          .Include(a => a.Subscriptions)
-                                          .FirstOrDefaultAsync(a => a.UserID == userId);
+            return await _context.Accounts
+                .Include(a => a.User)
+                .FirstOrDefaultAsync(a => a.Id == id);
         }
 
         public async Task<bool> AccountExistsAsync(string accountNumber)
@@ -31,5 +31,17 @@ namespace BankSystem.Repository.Repositories
             return await _context.Accounts
                 .FirstOrDefaultAsync(a => a.AccountNumber == accountNumber);
         }
+
+        public async Task<Account> GetByIdAsync(int id, bool includeUser = false)
+        {
+            IQueryable<Account> query = _context.Accounts;
+
+            if (includeUser)
+                query = query.Include(a => a.User);
+
+            return await query.FirstOrDefaultAsync(a => a.Id == id);
+        }
+
+        
     }
 }

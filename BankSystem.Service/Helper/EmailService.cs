@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Mail;
+using System.Net.Mime;
 
 namespace BankSystem.Service.Helper
 {
@@ -68,6 +69,29 @@ namespace BankSystem.Service.Helper
                 await client.SendMailAsync(message);
             }
         }
+
+        public async Task SendEmailWithAttachmentAsync(string toEmail, string subject, string body, byte[] attachmentBytes, string attachmentName)
+        {
+            using var message = new MailMessage();
+            message.From = new MailAddress(_fromEmail);
+            message.To.Add(toEmail);
+            message.Subject = subject;
+            message.Body = body;
+            message.IsBodyHtml = false;
+
+            using var stream = new MemoryStream(attachmentBytes);
+            var attachment = new Attachment(stream, attachmentName, MediaTypeNames.Application.Pdf);
+            message.Attachments.Add(attachment);
+
+            using var smtp = new SmtpClient(_smtpServer, _smtpPort)
+            {
+                Credentials = new NetworkCredential(_fromEmail, _password),
+                EnableSsl = true
+            };
+
+            await smtp.SendMailAsync(message);
+        }
+
 
     }
 }

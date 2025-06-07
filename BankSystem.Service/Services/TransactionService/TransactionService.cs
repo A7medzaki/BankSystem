@@ -148,6 +148,12 @@ namespace BankSystem.Service.Services.TransactionService
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+
+                var subject = "Withdrawal Receipt - STC Bank";
+                var body = $"Dear {account.User.UserName},\n\nYour withdrawal of ${amount} was successful. Please find your receipt attached.\n\nThank you for banking with us.";
+                var attachmentName = $"WithdrawReceipt{reference}.pdf";
+
+                await _emailService.SendEmailWithAttachmentAsync(account.User.Email, subject, body, pdfBytes, attachmentName);
                 return (true, "Withdrawal successful.", account.Balance);
             }
             catch
@@ -258,12 +264,20 @@ namespace BankSystem.Service.Services.TransactionService
                 await _context.SaveChangesAsync();
                 await dbTransaction.CommitAsync();
 
+                var subject = "Deposit Receipt - STC Bank";
+                var body = $"Dear {user.UserName},\n\nYour deposit of ${transaction.Amount} was successful. Please find your receipt attached.\n\nThank you for banking with us.";
+                var attachmentName = $"DepositReceipt{reference}.pdf";
+
+                await _emailService.SendEmailWithAttachmentAsync(user.Email, subject, body, pdfBytes, attachmentName);
+
+
                 return $"Deposit successful. New Balance: {account.Balance}";
             }
-            catch
+            catch (Exception ex)
             {
                 await dbTransaction.RollbackAsync();
-                return "Transaction failed.";
+                Console.WriteLine($"Error: {ex.Message}");
+                return $"Transaction failed. Reason: {ex.Message}";
             }
         }
 
@@ -272,13 +286,15 @@ namespace BankSystem.Service.Services.TransactionService
         {
             try
             {
-                var senderAccount = await _accountRepository.GetByIdAsync(senderAccountId);
+                var senderAccount = await _accountRepository.GetByIdWithUserAsync(senderAccountId);
                 if (senderAccount == null)
                     return "Sender account not found.";
 
                 var receiverAccount = await _accountRepository.GetByAccountNumberAsync(receiverAccountNumber);
                 if (receiverAccount == null)
                     return "Receiver account not found.";
+
+                receiverAccount = await _accountRepository.GetByIdWithUserAsync(receiverAccount.Id);
 
                 if (amount <= 0)
                     return "Transfer amount must be positive.";
@@ -311,18 +327,21 @@ namespace BankSystem.Service.Services.TransactionService
                 return $"Failed to initiate transfer: {ex.Message}";
             }
         }
+
         public async Task<string> ConfirmTransferFundsAsync(int senderAccountId, string receiverAccountNumber, decimal amount, string otp)
         {
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var senderAccount = await _accountRepository.GetByIdAsync(senderAccountId);
+                var senderAccount = await _accountRepository.GetByIdWithUserAsync(senderAccountId);
                 if (senderAccount == null)
                     return "Sender account not found.";
 
                 var receiverAccount = await _accountRepository.GetByAccountNumberAsync(receiverAccountNumber);
                 if (receiverAccount == null)
                     return "Receiver account not found.";
+
+                receiverAccount = await _accountRepository.GetByIdWithUserAsync(receiverAccount.Id);
 
                 if (amount <= 0)
                     return "Transfer amount must be positive.";
@@ -333,14 +352,15 @@ namespace BankSystem.Service.Services.TransactionService
                 if (senderAccount.Balance < amount)
                     return "Insufficient balance.";
 
+             
                 senderAccount.Balance -= amount;
                 senderAccount.LastUpdatedAt = DateTime.UtcNow;
 
                 receiverAccount.Balance += amount;
                 receiverAccount.LastUpdatedAt = DateTime.UtcNow;
 
-                var fromReference = Guid.NewGuid().ToString().Substring(0, 8);
-                var toReference = Guid.NewGuid().ToString().Substring(0, 8);
+                var fromReference = Guid.NewGuid().ToString("N").Substring(0, 8);
+                var toReference = Guid.NewGuid().ToString("N").Substring(0, 8);
 
                 var completedTransaction = new Transaction
                 {
@@ -362,6 +382,7 @@ namespace BankSystem.Service.Services.TransactionService
                 };
                 await _transactionRepository.AddAsync(receivedTransaction);
 
+                
                 var fromReport = new TransactionReport
                 {
                     UserFullName = senderAccount.User.UserName,
@@ -373,16 +394,6 @@ namespace BankSystem.Service.Services.TransactionService
                     Status = "Success"
                 };
                 var fromPdf = _reportService.GenerateTransactionReceiptPdf(fromReport);
-                _context.ReportHistories.Add(new ReportHistory
-                {
-                    AccountId = senderAccount.Id,
-                    TransactionType = "TransferOut",
-                    Amount = amount,
-                    Date = DateTime.UtcNow,
-                    ReferenceNumber = fromReference,
-                    Status = "Success",
-                    PdfBytes = fromPdf
-                });
 
                 var toReport = new TransactionReport
                 {
@@ -395,6 +406,19 @@ namespace BankSystem.Service.Services.TransactionService
                     Status = "Success"
                 };
                 var toPdf = _reportService.GenerateTransactionReceiptPdf(toReport);
+
+              
+                _context.ReportHistories.Add(new ReportHistory
+                {
+                    AccountId = senderAccount.Id,
+                    TransactionType = "TransferOut",
+                    Amount = amount,
+                    Date = DateTime.UtcNow,
+                    ReferenceNumber = fromReference,
+                    Status = "Success",
+                    PdfBytes = fromPdf
+                });
+
                 _context.ReportHistories.Add(new ReportHistory
                 {
                     AccountId = receiverAccount.Id,
@@ -412,9 +436,23 @@ namespace BankSystem.Service.Services.TransactionService
                 await _context.SaveChangesAsync();
                 await dbTransaction.CommitAsync();
 
+              
                 senderAccount.User.OTP = null;
                 senderAccount.User.OTPGeneratedAt = null;
                 await _accountRepository.UpdateAsync(senderAccount);
+
+              
+                var subjectSender = "Transfer Receipt - STC Bank";
+                var bodySender = $"Dear {senderAccount.User.UserName},\n\nYour transfer of ${amount} to account {receiverAccount.AccountNumber} was successful. Please find your receipt attached.\n\nThank you for banking with us.";
+                var attachmentNameSender = $"TransferOut_Receipt_{fromReference}.pdf";
+
+                await _emailService.SendEmailWithAttachmentAsync(senderAccount.User.Email, subjectSender, bodySender, fromPdf, attachmentNameSender);
+
+                var subjectReceiver = "Transfer Receipt - STC Bank";
+                var bodyReceiver = $"Dear {receiverAccount.User.UserName},\n\nYou have received a transfer of ${amount} from account {senderAccount.AccountNumber}. Please find your receipt attached.\n\nThank you for banking with us.";
+                var attachmentNameReceiver = $"TransferIn_Receipt_{toReference}.pdf";
+
+                await _emailService.SendEmailWithAttachmentAsync(receiverAccount.User.Email, subjectReceiver, bodyReceiver, toPdf, attachmentNameReceiver);
 
                 return "Transfer successful.";
             }
@@ -424,5 +462,6 @@ namespace BankSystem.Service.Services.TransactionService
                 return $"Transfer failed: {ex.Message}";
             }
         }
+
     }
 }
